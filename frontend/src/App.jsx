@@ -17,6 +17,7 @@ import About from './components/About';
 import AIOrbBackground from './components/AIOrbBackground';
 import InteractiveHeroScanner from './components/InteractiveHeroScanner';
 import RealTimeResumeUpdater from './components/RealTimeResumeUpdater';
+import HistoryDrawer from './components/HistoryDrawer';
 import { analyzeResume } from './services/api';
 
 import {
@@ -40,6 +41,7 @@ export default function App() {
   const [aiState, setAiState] = useState('idle'); // 'idle', 'processing', 'completed'
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const handleAnalyze = async (fileOverride = null) => {
     const fileToUse = fileOverride || selectedFile;
@@ -87,6 +89,7 @@ export default function App() {
         onReset={handleReset}
         hasResult={Boolean(result)}
         aiState={aiState}
+        onOpenHistory={() => setIsHistoryOpen(true)}
       />
 
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
@@ -379,6 +382,16 @@ export default function App() {
           <p>© {new Date().getFullYear()} Resume Reviewer. AI-Powered Resume Analysis & Job Matcher.</p>
         </div>
       </footer>
+
+      {/* Supabase History Drawer */}
+      <HistoryDrawer
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        onLoadReview={(loadedReview) => {
+          setResult(loadedReview);
+          setActiveTab('dashboard');
+        }}
+      />
     </div>
   );
 }

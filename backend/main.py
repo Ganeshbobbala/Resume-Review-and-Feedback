@@ -12,6 +12,7 @@ from services.scorer import calculate_scores, ROLE_SKILLS
 from services.feedback import generate_feedback, generate_bullet_rewrites
 from services.job_matcher import analyze_job_match
 from services.format_analyzer import analyze_resume_format
+from services.supabase_service import save_resume_review, get_recent_reviews, get_review_by_id
 
 app = FastAPI(
     title="Resume Reviewer API",
@@ -132,7 +133,8 @@ async def analyze_resume(
         scores=scores
     )
 
-    return {
+    result = {
+        "filename": file.filename,
         "extracted_text": extracted_text,
         "predicted_category": predicted_category,
         "target_role": target_role_to_use,
@@ -152,6 +154,30 @@ async def analyze_resume(
         "recommendations": feedback["recommendations"],
         "detailed_feedback": feedback.get("detailed_feedback", {})
     }
+
+    # Automatically persist feedback and resume details to Supabase database
+    try:
+        db_saved = save_resume_review({
+            "filename": file.filename,
+            "target_role": target_role_to_use,
+            "predicted_category": predicted_category,
+            "overall_score": scores["resume_score"],
+            "detected_skills": detected_skills,
+            "missing_skills": scores["missing_skills"],
+            "strengths": feedback["strengths"],
+            "weaknesses": feedback["weaknesses"],
+            "recommendations": feedback["recommendations"],
+            "bullet_rewrites": [],
+            "format_analysis": {},
+            "raw_text": extracted_text[:8000]
+        })
+        if db_saved and "id" in db_saved:
+            result["db_id"] = db_saved["id"]
+            result["db_stored"] = True
+    except Exception as e:
+        print(f"Supabase store notice: {e}")
+
+    return result
 
 # =========================================================================
 # ENDPOINT: /analyze-text (Real-Time Live Resume Text Update & Optimization)
@@ -198,7 +224,7 @@ async def analyze_resume_text(payload: ResumeTextPayload):
         scores=scores
     )
 
-    return {
+    result = {
         "extracted_text": extracted_text,
         "predicted_category": predicted_category,
         "target_role": target_role_to_use,
@@ -218,6 +244,29 @@ async def analyze_resume_text(payload: ResumeTextPayload):
         "recommendations": feedback["recommendations"],
         "detailed_feedback": feedback.get("detailed_feedback", {})
     }
+
+    try:
+        db_saved = save_resume_review({
+            "filename": "live_editor_resume.txt",
+            "target_role": target_role_to_use,
+            "predicted_category": predicted_category,
+            "overall_score": scores["resume_score"],
+            "detected_skills": detected_skills,
+            "missing_skills": scores["missing_skills"],
+            "strengths": feedback["strengths"],
+            "weaknesses": feedback["weaknesses"],
+            "recommendations": feedback["recommendations"],
+            "bullet_rewrites": [],
+            "format_analysis": {},
+            "raw_text": extracted_text[:8000]
+        })
+        if db_saved and "id" in db_saved:
+            result["db_id"] = db_saved["id"]
+            result["db_stored"] = True
+    except Exception as e:
+        print(f"Supabase store notice: {e}")
+
+    return result
 
 # =========================================================================
 # ENDPOINT: /rewrite-bullet (Interactive AI Bullet Point Improver)
@@ -305,6 +354,23 @@ async def analyze_format(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Format analysis failed: {str(e)}")
+
+# =========================================================================
+# ENDPOINTS: /history & /history/{review_id} (Supabase Database Persistence)
+# =========================================================================
+@app.get("/history")
+def get_resume_history(limit: int = 20):
+    """Fetches stored resume reviews from Supabase."""
+    reviews = get_recent_reviews(limit=limit)
+    return {"reviews": reviews, "total": len(reviews)}
+
+@app.get("/history/{review_id}")
+def get_resume_history_detail(review_id: str):
+    """Fetches full details of a specific resume review from Supabase."""
+    record = get_review_by_id(review_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Resume review record not found.")
+    return record
 
 if __name__ == "__main__":
     import os

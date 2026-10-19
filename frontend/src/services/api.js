@@ -118,3 +118,38 @@ export const analyzeResumeFormat = async (file) => {
     }
   }
 };
+
+export const getResumeHistory = async (limit = 20) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/history?limit=${limit}`, {
+      timeout: 10000,
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.detail || 'Failed to fetch history.');
+    } else if (error.request) {
+      throw new Error(`Cannot connect to backend server on ${API_BASE_URL}.`);
+    } else {
+      throw new Error(error.message || 'An unexpected error occurred while fetching history.');
+    }
+  }
+};
+
+export const getResumeReviewDetail = async (reviewId) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/history/${reviewId}`, {
+      timeout: 10000,
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.detail || 'Failed to fetch review details.');
+    } else if (error.request) {
+      throw new Error(`Cannot connect to backend server on ${API_BASE_URL}.`);
+    } else {
+      throw new Error(error.message || 'An unexpected error occurred while fetching review.');
+    }
+  }
+};
+
