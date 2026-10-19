@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
 
 export const analyzeResume = async (file, targetRole) => {
   const formData = new FormData();
@@ -19,7 +19,7 @@ export const analyzeResume = async (file, targetRole) => {
     if (error.response && error.response.data) {
       throw new Error(error.response.data.detail || error.response.data.error || 'Failed to analyze resume.');
     } else if (error.request) {
-      throw new Error('Cannot connect to FastAPI backend server on http://127.0.0.1:8000.');
+      throw new Error(`Cannot connect to backend server on ${API_BASE_URL}.`);
     } else {
       throw new Error(error.message || 'An unexpected error occurred during resume analysis.');
     }
@@ -42,7 +42,7 @@ export const analyzeResumeText = async (resumeText, targetRole) => {
     if (error.response && error.response.data) {
       throw new Error(error.response.data.detail || error.response.data.error || 'Failed to analyze resume text.');
     } else if (error.request) {
-      throw new Error('Cannot connect to FastAPI backend server on http://127.0.0.1:8000.');
+      throw new Error(`Cannot connect to backend server on ${API_BASE_URL}.`);
     } else {
       throw new Error(error.message || 'An unexpected error occurred during live resume text analysis.');
     }
@@ -65,7 +65,7 @@ export const rewriteBullet = async (bulletText, targetRole) => {
     if (error.response && error.response.data) {
       throw new Error(error.response.data.detail || error.response.data.error || 'Failed to rewrite bullet.');
     } else if (error.request) {
-      throw new Error('Cannot connect to FastAPI backend server on http://127.0.0.1:8000.');
+      throw new Error(`Cannot connect to backend server on ${API_BASE_URL}.`);
     } else {
       throw new Error(error.message || 'An unexpected error occurred while rewriting bullet.');
     }
@@ -89,7 +89,7 @@ export const matchJobDescription = async (file, jobDescription) => {
     if (error.response && error.response.data) {
       throw new Error(error.response.data.detail || error.response.data.error || 'Failed to match job description.');
     } else if (error.request) {
-      throw new Error('Cannot connect to FastAPI backend server on http://127.0.0.1:8000.');
+      throw new Error(`Cannot connect to backend server on ${API_BASE_URL}.`);
     } else {
       throw new Error(error.message || 'An unexpected error occurred during job matching.');
     }
@@ -112,7 +112,7 @@ export const analyzeResumeFormat = async (file) => {
     if (error.response && error.response.data) {
       throw new Error(error.response.data.detail || error.response.data.error || 'Failed to analyze format.');
     } else if (error.request) {
-      throw new Error('Cannot connect to FastAPI backend server on http://127.0.0.1:8000.');
+      throw new Error(`Cannot connect to backend server on ${API_BASE_URL}.`);
     } else {
       throw new Error(error.message || 'An unexpected error occurred during format analysis.');
     }

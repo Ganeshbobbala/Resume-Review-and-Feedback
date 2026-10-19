@@ -14,22 +14,34 @@ class ResumePredictor:
         self.load_models()
 
     def load_models(self):
-        # Locate model files in root /models directory
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        models_dir = os.path.join(base_dir, "models")
+        # Locate model files in candidate locations (project root, backend dir, cwd)
+        candidates = [
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "models")),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models")),
+            os.path.abspath(os.path.join(os.getcwd(), "models")),
+            os.path.abspath(os.path.join(os.getcwd(), "..", "models"))
+        ]
         
+        models_dir = None
+        for candidate in candidates:
+            c_path = os.path.join(candidate, "resume_classifier.pkl")
+            v_path = os.path.join(candidate, "tfidf_vectorizer.pkl")
+            if os.path.exists(c_path) and os.path.exists(v_path):
+                models_dir = candidate
+                break
+
+        if not models_dir:
+            print(f"Warning: Model files missing in checked locations: {candidates}")
+            return
+
         classifier_path = os.path.join(models_dir, "resume_classifier.pkl")
         vectorizer_path = os.path.join(models_dir, "tfidf_vectorizer.pkl")
-
-        if not os.path.exists(classifier_path) or not os.path.exists(vectorizer_path):
-            print(f"Warning: Model files missing in {models_dir}")
-            return
 
         try:
             self.model = joblib.load(classifier_path)
             self.vectorizer = joblib.load(vectorizer_path)
             self.is_loaded = True
-            print(f"ML Model ({type(self.model).__name__}) and TF-IDF Vectorizer successfully connected.")
+            print(f"ML Model ({type(self.model).__name__}) and TF-IDF Vectorizer successfully connected from {models_dir}.")
         except Exception as e:
             print(f"Error loading model artifacts: {e}")
             self.is_loaded = False
